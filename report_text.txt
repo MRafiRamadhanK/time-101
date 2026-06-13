@@ -1,0 +1,135 @@
+ time 101   
+(cara mengelola waktu untuk pelajar)  
+  
+Tim : London Is Blue  
+Member : M Rafi Ramadhan Kartika (20230140138) , Dzakia  Lailah Hamsa (20230140119), 
+Imron Satrio Purnomo (20230140122)  
+  
+deskripsi tema : aplikasi yang akan dirancang untuk pelajar dimana di dalam aplikasi 
+tersebut terdapat mengatur jadwal sekolah, sholat, bermain, istirahat, belajar . dimana di 
+dalam itu nanti terdapat interaktifitas seperti misi harian, exp, dsb.  
+  
+Latar Belakang Masalah :  
+Kemajuan teknologi memberikan kemudahan akses informasi, namun memicu tantangan 
+baru berupa krisis distraksi digital bagi pelajar. Paparan hiburan daring yang berlebihan 
+seringkali memicu kebiasaan menunda -nunda pekerjaan ( procrastination ), membuat pelajar 
+kesulitan mengatur prioritas harian yang berujung pada sistem belajar kebut semalam dan 
+burnout . Metode pencatatan jadwal konvensional kurang efektif karena kaku dan 
+membosankan bagi digital native . Oleh karena itu, diperlukan intervensi digital yang 
+mema nfaatkan minat pelajar terhadap game . Aplikasi "Time 101" dirancang sebagai solusi 
+manajemen waktu berbasis gamifikasi untuk membantu pelajar mencapai keseimbangan 
+hidup yang mencakup tanggung jawab akademik (sekolah, belajar), spiritual (sholat), 
+hiburan (bermain), dan kesehatan fisik (isti rahat).  
+  
+Experience :  
+• Pengalaman Gamifikasi ( Playful Experience ): Sensasi menyenangkan seperti sedang 
+bermain game  saat menjalani rutinitas kewajiban sehari -hari.  
+• Keterikatan Emosional ( Emotional Attachment ): Rasa empati dan peduli terhadap 
+Karakter Virtual (Avatar) yang dirawat, di mana kondisi karakter tersebut 
+merepresentasikan tingkat kedisiplinan pengguna.  
+• Rasa Pencapaian ( Sense of Achievement ): Kepuasan psikologis dan kebanggaan yang 
+didapat dari penerimaan reward  instan berupa EXP , efek level -up, dan koleksi Badge  
+saat berhasil menyelesaikan "misi" (jadwal).  
+• Kolaborasi Interaktif ( Guided Autonomy ): Melalui fitur Parent Increment , anak 
+tetap merasa bermain game  dengan menyelesaikan misi tambahan, sementara 
+orang tua dapat memantau dan memberikan apresiasi secara suportif tanpa 
+terlihat seperti mengawasi dengan kaku. Fokus dan Ketenangan ( Flow State ): 
+Pengalaman belajar yang terkondisikan, tenang, dan minim distraksi saat pengguna 
+memasuki blok waktu khusus "Belajar".  
+• Dukungan Positif ( Forgiving & Motivating ): Pengalaman penggunaan yang rendah 
+stres ( low-stress ), di mana pengguna merasa didukung dan dimotivasi untuk 
+mencoba lagi keesokan harinya jika ada misi harian yang terlewat, bukan merasa 
+dihukum.  
+  
+Content :   
+• Modul Manajemen Waktu (Time Blocking):   
+o Jadwal – jadwal : berisi blok blok  yang ak an menandai  setiap waktu yang di 
+tentukan dengan ui seperti Jam lingkaran yang akan di blok sesuai dengan 
+jadwalnya  
+o Jadwal Istirahat:  waktu luang yang dimiliki o leh anak -anak pada ui jam 
+lingkaran  yang kosong ( tidak di blok)  
+o Jadwal Terkunci Sistem (System -Locked Schedule ): Jadwal fundamental 
+(Sekolah, Ibadah, Tidur, dan Bangun Tidur) yang otomatis diatur oleh sistem 
+dan tidak bisa diubah tanpa persetujuan orang tua untuk melatih kedisiplinan 
+dasar.  
+o Fitur Parent Increment  (Side -Quests):  Misi tambahan opsional yang diberikan 
+oleh orang tua (seperti: merapikan meja, menyiram tanaman) untuk 
+memberikan ekstra EXP , menciptakan kolaborasi positif antara anak dan orang 
+tua. 
+o  
+• Sistem Gamifikasi (Progresi & Interaktivitas):   
+o Experience Points (EXP):  Reward  poin yang didapatkan setelah 
+menyelesaikan jadwal.  
+o Sistem Level:  Indikator tingkatan akun pelajar berdasarkan akumulasi EXP .  
+o Pencapaian & Badge : Lencana digital untuk apresiasi kedisiplinan (misal: 
+badge  untuk penyelesaian beberapa task yang diberikan oleh orang tuanya 
+atau setelah mengerjakan beberapa tugas ).  
+• Elemen Karakter & Visual Profil:   
+o Karakter Virtual (Avatar):  Karakter pendamping yang ekspresi dan kondisinya 
+berubah menyesuaikan tingkat kedisiplinan jadwal pelajar.  
+o Dashboard Status:  Antarmuka yang  jam analog yang telah di blok sesuai 
+denganjadwalnya,  menampilkan progress bar  EXP , level saat ini . 
+  
+• Konten Teks & Motivasi:   
+o Quotes Harian:  Kutipan motivasi yang berganti setiap hari di halaman 
+beranda.  
+o Notifikasi Pop -up: Teks interaktif singkat saat pelajar mendapatkan EXP atau 
+menyelesaikan misi.  
+o Suara quotes : berisi suara dari quotes harian .   
+  
+Delivery :   
+• Platform Utama:  Aplikasi Web Interaktif ( Interactive Web Application ) yang responsif.  
+• Aksesibilitas:  Dapat diakses melalui peramban web ( web browser ) di berbagai jenis 
+perangkat (Komputer, Laptop, Tablet, maupun Smartphone ).  
+• Antarmuka Pengguna (UI):  Dashboard  interaktif berbasis visual ( Visual -based 
+Interactive Dashboard ) yang ramah anak/pelajar ( User -Friendly ).  
+• Metode Interaksi:   
+o Ketukan/Klik ( Tap/Click ) pada tombol aksi untuk menandai penyelesaian 
+"misi" atau jadwal.  
+o Tap/Click  untuk melihat detail bagian yang di blok pada jam analo g tersebut.  
+ 
+• Penyampaian Umpan Balik ( Feedback Delivery ): Pemberitahuan real-time  berbasis 
+multimedia ( pop-up teks, animasi layar, dan efek suara instan).  
+ 
+ 
+Rancangan Multimedia :  
+• Teks (Tipografi Dinamis):   
+o Label kategori pada blok jadwal (Sekolah, Ibadah , Belajar, Bermain, Istirahat).  
+o Indikator numerik pada bar EXP dan level pengguna.  
+o Pop-up teks interaktif saat menyelesaikan misi (contoh: "+50 EXP!").  
+o Teks quotes  motivasi harian pada beranda aplikasi.  
+o Teks edukasi sebab -akibat (Pesan Masa Depan) yang muncul pada notifikasi 
+untuk menyadarkan pelajar akan dampak jangka panjang dari kedisiplinan 
+mereka (contoh: pentingnya tidur tepat waktu agar fokus di sekolah).  
+
+• Gambar 2D:  
+o Aset visual Karakter Virtual (Avatar) pendamping  : Aset visual Avatar Dinamis 
+yang ekspresinya berubah secara  real-time (Semangat, Netral, Lelah) 
+menyesuaikan dengan penyelesaian progres harian pelajar .  
+o Ikonografi untuk modul jadwal (misal: ikon masjid untuk Sholat, ikon buku 
+untuk Belajar, ikon controller  untuk Bermain).  
+o Ilustrasi digital untuk Badge  atau Lencana Pencapaian.  
+o Elemen antarmuka pengguna (UI) seperti tombol checklist , progress bar , dan 
+background dashboard .  
+• Audio:   
+o Sound Effect  (SFX) interaktif berupa suara "koin" atau "ting" saat jadwal 
+berhasil dicentang.  
+o SFX Level -Up yang meriah saat akumulasi EXP mencapai target.  
+o Audio pengingat ( alarm audio ) dengan nada yang halus dan tidak 
+mengganggu saat terjadi pergantian jadwal blok waktu.  
+o Audio voice over dari quotes motivasi harian.  
+• Animasi:   
+o Animasi confetti  yang jatuh di layar saat pengguna berhasil naik level atau 
+mendapatkan badge .  
+o Animasi transisi pergerakan  saat pengguna melakukan drag -and-drop  pada 
+blok jadwal.  
+o Animasi idle mikro pada Karakter Virtual (contoh: avatar terlihat menguap 
+atau memunculkan ikon "Zzz" saat memasuki jam tidur, atau bergerak 
+menulis saat jadwal belajar).  
+  
+ 
+ 
+Role Anggota :   
+1. Muhammad Rafi Ramadhan Kartika : Lead Developer / Full -Stack developer  
+2. Dzakia Lailah Hamsa : UI/UX designer  
+3. Imron Satrio Purnomo : Multimedia Specialist & Asset Designer  

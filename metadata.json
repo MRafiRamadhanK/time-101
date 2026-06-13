@@ -1,0 +1,6 @@
+{
+  "name": "Time 101",
+  "description": "Aplikasi manajemen waktu berbasis gamifikasi interaktif untuk melatih kedisiplinan mandiri anak dengan fitur Parent Increment, jadwal sistem terkunci, poin EXP/level, dan asisten virtual.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
