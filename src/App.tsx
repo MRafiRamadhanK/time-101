@@ -314,6 +314,11 @@ export default function App() {
   });
   const [confettiActive, setConfettiActive] = useState(false);
 
+  // Debug day override (0=Minggu, 1=Senin, ..., 6=Sabtu)
+  const [debugDay, setDebugDay] = useState<number>(new Date().getDay());
+  const debugDayRef = useRef<number>(new Date().getDay());
+  const [debugOpen, setDebugOpen] = useState(false);
+
   // Notifikasi Edukasi Kontekstual
   const [activeEducNotif, setActiveEducNotif] = useState<typeof EDUC_NOTIFS[string] | null>(null);
   const shownEducNotifsRef = useRef<Set<string>>(new Set());
@@ -328,6 +333,7 @@ export default function App() {
   // Kartu Edukasi Visual
   const [activeEduCard, setActiveEduCard] = useState<(typeof EDU_CARDS[string] & { scheduleId: string }) | null>(null);
   const shownEduCardsRef = useRef<Set<string>>(new Set());
+  const alarmIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ─── Pesan Adulting ────────────────────────────────────────────────────────
   const [activeAdultingMsg, setActiveAdultingMsg] = useState<AdultingMsgData | null>(null);
@@ -376,7 +382,12 @@ export default function App() {
           const cardId = `${eduKey}_${schedule.id}`;
           if (!shownEduCardsRef.current.has(cardId)) {
             shownEduCardsRef.current.add(cardId);
-            setTimeout(() => setActiveEduCard({ ...EDU_CARDS[eduKey], scheduleId: schedule.id }), 600);
+            setTimeout(() => {
+              setActiveEduCard({ ...EDU_CARDS[eduKey], scheduleId: schedule.id });
+              // Start repetitive alarm every 8 seconds until dismissed
+              if (alarmIntervalRef.current) clearInterval(alarmIntervalRef.current);
+              alarmIntervalRef.current = setInterval(() => playAlarmSound(), 8000);
+            }, 600);
           }
         }
       }
@@ -456,7 +467,7 @@ export default function App() {
     if (deviceId) {
       fetchState();
     }
-  }, [deviceId]);
+  }, [deviceId, debugDay]);
 
   const getHeaders = (auth = false) => {
     const targetDevice = (viewMode === "parent" && activeChildDeviceId) ? activeChildDeviceId : deviceId;
@@ -465,7 +476,7 @@ export default function App() {
       "x-device-id": targetDevice
     };
     if (auth && parentToken) {
-      headers["Authorization"] = `Bearer \${parentToken}`;
+      headers["Authorization"] = `Bearer ${parentToken}`;
     }
     return headers;
   };
@@ -480,17 +491,24 @@ export default function App() {
         "x-device-id": targetDevice
       };
       if (viewMode === "parent" && parentToken) headers["Authorization"] = `Bearer ${parentToken}`;
-      const res = await fetch("/api/db", { headers });
+
+      // Parent view: show ALL schedules regardless of day
+      // Child view: filter by real day (with optional debug override)
+      let url = '/api/db';
+      if (viewMode === 'parent') {
+        url = '/api/db?showAll=true';
+      } else {
+        const realDay = new Date().getDay();
+        const currentDebugDay = debugDayRef.current;
+        if (currentDebugDay !== realDay) url = `/api/db?debugDay=${currentDebugDay}`;
+      }
+
+      const res = await fetch(url, { headers });
       if (!res.ok) throw new Error("Failed to fetch state");
       const data = await res.json();
       if (data) {
-        // Filter jadwal berdasarkan hari — 'Senin - Jumat' disembunyikan saat weekend
-        const todayIdx = new Date().getDay(); // 0=Minggu, 6=Sabtu
-        const isWeekend = todayIdx === 0 || todayIdx === 6;
-        const filtered = (data.schedules ?? []).filter((s: import('./types').ScheduleItem) =>
-          !(s.day === 'Senin - Jumat' && isWeekend)
-        );
-        setSchedules(filtered);
+        // Backend already handles day filtering — just use as-is
+        setSchedules(data.schedules ?? []);
         setChildState(prev => ({ ...prev, ...data.child }));
       }
     } catch (err) {
@@ -798,6 +816,11 @@ export default function App() {
   // ─── Dismiss Kartu Edukasi Visual (+5 EXP) ────────────────────────────
   const handleDismissEduCard = async () => {
     if (!activeEduCard) return;
+    // Stop repetitive alarm
+    if (alarmIntervalRef.current) {
+      clearInterval(alarmIntervalRef.current);
+      alarmIntervalRef.current = null;
+    }
     const reward = activeEduCard.expReward;
     setActiveEduCard(null);
     playCoinSound();
@@ -874,16 +897,90 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#E0F2FE] text-[#1E293B] flex flex-col justify-between font-sans antialiased pb-10">
       
-      {/* --- DEBUG TIME OVERRIDE --- */}
-      <div className="fixed bottom-4 left-4 z-[100] bg-red-100 p-2 rounded-xl shadow-lg border-2 border-red-400 flex flex-col gap-1">
-        <label className="text-xs font-black text-red-700 uppercase tracking-wider">🛠️ Debug Time</label>
-        <input 
-          type="time" 
-          value={currentTime} 
-          onChange={(e) => setCurrentTime(e.target.value)}
-          className="border-2 border-red-300 rounded-lg px-2 py-1 text-sm focus:outline-none focus:border-red-500 font-mono font-bold"
-        />
+      {/* --- DEBUG TOOL (collapsible) --- */}
+      <div className="fixed bottom-4 right-4 z-[100] flex flex-col items-end gap-1">
+        <button
+          onClick={() => setDebugOpen(prev => !prev)}
+          className="bg-red-500 hover:bg-red-600 text-white text-xs font-black px-2.5 py-1.5 rounded-lg border-b-2 border-red-700 active:translate-y-[1px] active:border-b-0 transition-all cursor-pointer shadow-lg"
+          title="Toggle Debug Tool"
+        >
+          {debugOpen ? '✕ Tutup Debug' : '🛠️ Debug'}
+        </button>
+
+        {debugOpen && (
+          <div className="bg-red-100 p-2 rounded-xl shadow-lg border-2 border-red-400 flex flex-col gap-1.5">
+            <label className="text-xs font-black text-red-700 uppercase tracking-wider">🛠️ Debug Tool</label>
+            <input 
+              type="time" 
+              value={currentTime} 
+              onChange={(e) => setCurrentTime(e.target.value)}
+              className="border-2 border-red-300 rounded-lg px-2 py-1 text-sm focus:outline-none focus:border-red-500 font-mono font-bold"
+            />
+            <select
+              value={debugDay}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                debugDayRef.current = val;
+                setDebugDay(val);
+              }}
+              className="border-2 border-red-300 rounded-lg px-2 py-1 text-xs font-black focus:outline-none focus:border-red-500 bg-white text-red-800"
+            >
+              <option value={1}>📅 Senin</option>
+              <option value={2}>📅 Selasa</option>
+              <option value={3}>📅 Rabu</option>
+              <option value={4}>📅 Kamis</option>
+              <option value={5}>📅 Jumat</option>
+              <option value={6}>📅 Sabtu (Weekend)</option>
+              <option value={0}>📅 Minggu (Weekend)</option>
+            </select>
+            <button
+              onClick={async () => {
+                playCoinSound();
+                let newExp = childState.exp + 200;
+                let newLevel = childState.level;
+                let newMaxExp = childState.maxExp;
+                if (newExp >= newMaxExp) {
+                  newLevel += 1;
+                  newExp -= newMaxExp;
+                  newMaxExp = Math.floor(1000 + (newLevel * 100));
+                  playLevelUpSound();
+                  setConfettiActive(true);
+                }
+                try {
+                  await fetch('/api/child', {
+                    method: 'POST', headers: getHeaders(),
+                    body: JSON.stringify({ exp: newExp, level: newLevel, maxExp: newMaxExp })
+                  });
+                } catch (_) {}
+                setChildState(prev => ({ ...prev, exp: newExp, level: newLevel, maxExp: newMaxExp }));
+              }}
+              className="bg-red-500 hover:bg-red-600 text-white text-xs font-black px-2 py-1.5 rounded-lg border-b-2 border-red-700 active:translate-y-[1px] active:border-b-0 transition-all cursor-pointer uppercase tracking-wide"
+            >
+              ⚡ +200 EXP (Test Level Up)
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  const res = await fetch('/api/restore-system-schedules', {
+                    method: 'POST', headers: getHeaders()
+                  });
+                  const data = await res.json();
+                  if (data.success) {
+                    alert(`✅ Berhasil restore ${data.restored} jadwal sistem!`);
+                    fetchState();
+                  } else {
+                    alert('Gagal restore: ' + (data.error || 'unknown'));
+                  }
+                } catch (_) { alert('Error jaringan'); }
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white text-xs font-black px-2 py-1.5 rounded-lg border-b-2 border-green-800 active:translate-y-[1px] active:border-b-0 transition-all cursor-pointer uppercase tracking-wide"
+            >
+              🔄 Restore Jadwal Sistem
+            </button>
+          </div>
+        )}
       </div>
+
 
       {/* Dynamic Celebration particles overlay */}
       <ConfettiEffect active={confettiActive} onComplete={() => setConfettiActive(false)} />
@@ -1288,64 +1385,64 @@ export default function App() {
         ) : (
           
           /* PARENT VIEW PORT: Create schedules with templates + watcher on the right */
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            
-            {/* Core Creation workspace */}
-            <div className="lg:col-span-8 flex flex-col gap-6">
-              
-              {/* New Child Link Box */}
-              <div className="bg-white p-6 rounded-[32px] border-4 border-indigo-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="w-full">
-                  <h3 className="font-black text-indigo-900 text-sm">Tautkan Akun Anak Baru</h3>
-                  <p className="text-xs text-slate-500 font-bold mt-1">Masukkan 6 digit kode unik yang ada di layar aplikasi anak.</p>
-                </div>
-                <div className="flex w-full sm:w-auto gap-2">
-                  <input 
-                    type="text" 
-                    placeholder="Kode Unik" 
-                    value={linkChildCode}
-                    onChange={(e) => setLinkChildCode(e.target.value.toUpperCase())}
-                    className="flex-1 sm:flex-none w-full min-w-0 px-4 py-2 border-2 border-indigo-200 rounded-xl text-sm font-black text-indigo-900 focus:outline-none focus:border-indigo-500"
-                    maxLength={6}
-                  />
-                  <button 
-                    onClick={handleLinkChild}
-                    className="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-bold text-xs uppercase shadow-sm"
-                  >
-                    Hubungkan
-                  </button>
-                </div>
-              </div>
+          <div className="flex flex-col gap-6">
 
-              {activeChildDeviceId ? (
-                <ParentPOV
-                  schedules={schedules}
-                  onAddSchedule={handleAddParentScheduleItem}
-                  onDeleteSchedule={handleDeleteScheduleItem}
-                  onUpdateSchedule={handleUpdateScheduleItem}
+            {/* Top bar: Tautkan Akun Anak Baru — always full width */}
+            <div className="bg-white p-5 rounded-[32px] border-4 border-indigo-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="font-black text-indigo-900 text-sm">Tautkan Akun Anak Baru</h3>
+                <p className="text-xs text-slate-500 font-bold mt-1">Masukkan 6 digit kode unik yang ada di layar aplikasi anak.</p>
+              </div>
+              <div className="flex w-full sm:w-auto gap-2">
+                <input 
+                  type="text" 
+                  placeholder="Kode Unik" 
+                  value={linkChildCode}
+                  onChange={(e) => setLinkChildCode(e.target.value.toUpperCase())}
+                  className="flex-1 sm:w-40 min-w-0 px-4 py-2 border-2 border-indigo-200 rounded-xl text-sm font-black text-indigo-900 focus:outline-none focus:border-indigo-500"
+                  maxLength={6}
                 />
-              ) : (
-                <div className="bg-white p-10 rounded-[32px] border-4 border-slate-200 text-center flex flex-col items-center justify-center min-h-[300px]">
-                  <h2 className="font-black text-slate-400 text-lg mb-2">Belum Ada Anak Terpilih</h2>
-                  <p className="text-sm font-bold text-slate-400 max-w-sm">
-                    Silakan masukkan kode unik di atas untuk menautkan perangkat anak Anda ke akun orang tua ini.
-                  </p>
-                </div>
-              )}
+                <button 
+                  onClick={handleLinkChild}
+                  className="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-xl font-bold text-xs uppercase shadow-sm"
+                >
+                  Hubungkan
+                </button>
+              </div>
             </div>
 
-            {/* Watcher preview panel so parent sees live update updates */}
-            {activeChildDeviceId && (
-              <div className="lg:col-span-4 flex flex-col gap-6 lg:sticky lg:top-28">
-                <div className="p-3 bg-white border-4 border-blue-100 text-[#1E293B] shadow-[4px_4px_0px_0px_rgba(30,58,138,0.1)] rounded-[20px] flex justify-center text-xs uppercase font-black tracking-widest font-mono">
-                  🔍 Pemantau Anak (Live Watcher)
+            {/* Main content: ParentPOV form (left) + Watcher (right) */}
+            {activeChildDeviceId ? (
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+                {/* ParentPOV fills 8 cols */}
+                <div className="xl:col-span-8">
+                  <ParentPOV
+                    schedules={schedules}
+                    onAddSchedule={handleAddParentScheduleItem}
+                    onDeleteSchedule={handleDeleteScheduleItem}
+                    onUpdateSchedule={handleUpdateScheduleItem}
+                  />
                 </div>
-                <AnalogClock
-                  schedules={schedules}
-                  selectedItem={selectedItem}
-                  onSelectItem={(item) => setSelectedItem(item)}
-                  activeTimeStr={currentTime}
-                />
+
+                {/* Live Watcher fills 4 cols */}
+                <div className="xl:col-span-4 flex flex-col gap-4 xl:sticky xl:top-28">
+                  <div className="p-3 bg-white border-4 border-blue-100 text-[#1E293B] shadow-[4px_4px_0px_0px_rgba(30,58,138,0.1)] rounded-[20px] flex justify-center text-xs uppercase font-black tracking-widest font-mono">
+                    🔍 Pemantau Anak (Live Watcher)
+                  </div>
+                  <AnalogClock
+                    schedules={schedules}
+                    selectedItem={selectedItem}
+                    onSelectItem={(item) => setSelectedItem(item)}
+                    activeTimeStr={currentTime}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white p-10 rounded-[32px] border-4 border-slate-200 text-center flex flex-col items-center justify-center min-h-[300px]">
+                <h2 className="font-black text-slate-400 text-lg mb-2">Belum Ada Anak Terpilih</h2>
+                <p className="text-sm font-bold text-slate-400 max-w-sm">
+                  Silakan masukkan kode unik di atas untuk menautkan perangkat anak Anda ke akun orang tua ini.
+                </p>
               </div>
             )}
           </div>

@@ -216,10 +216,18 @@ async function getOrCreateChild(deviceId: string) {
   const [childRows]: any = await pool.query(`SELECT * FROM children WHERE device_id = ?`, [deviceId]);
   if (childRows.length > 0) {
     const child = childRows[0];
-    // parse badges JSON
+    // Safe parse badges — handles both JSON array and plain comma-separated strings
     if (typeof child.badges === 'string') {
+      try {
         child.badges = JSON.parse(child.badges);
+      } catch {
+        // Fallback: plain text like "alarm_off,sholat_rajin"
+        child.badges = child.badges.split(',').map((b: string) => b.trim()).filter(Boolean);
+        // Fix in DB too
+        await pool.query(`UPDATE children SET badges = ? WHERE id = ?`, [JSON.stringify(child.badges), child.id]);
+      }
     }
+    if (!Array.isArray(child.badges)) child.badges = [];
     child.streakClaimedToday = !!child.streakClaimedToday;
     return child;
   }
@@ -251,9 +259,9 @@ async function getOrCreateChild(deviceId: string) {
   return newChild;
 }
 
-async function getSchedules(childId: number) {
+async function getSchedules(childId: number, overrideDay?: number) {
   const [schedules]: any = await pool.query(`SELECT * FROM schedules WHERE child_id = ?`, [childId]);
-  const dayOfWeek = new Date().getDay(); // 0=Minggu, 1=Senin, ..., 5=Jumat, 6=Sabtu
+  const dayOfWeek = overrideDay !== undefined ? overrideDay : new Date().getDay();
   const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
   return schedules
@@ -268,6 +276,17 @@ async function getSchedules(childId: number) {
       locked: !!s.locked,
       parentQuest: !!s.parentQuest
     }));
+}
+
+// Return ALL schedules without day filter (for parent view)
+async function getAllSchedules(childId: number) {
+  const [schedules]: any = await pool.query(`SELECT * FROM schedules WHERE child_id = ?`, [childId]);
+  return schedules.map((s: any) => ({
+    ...s,
+    completed: !!s.completed,
+    locked: !!s.locked,
+    parentQuest: !!s.parentQuest
+  }));
 }
 
 
@@ -353,9 +372,16 @@ app.get("/api/db", async (req, res) => {
   const deviceId = req.headers['x-device-id'] as string;
   if (!deviceId) return res.status(400).json({ error: "Device ID required" });
 
+  // showAll=true → return all schedules without day filter (for parent view)
+  const showAll = req.query.showAll === 'true';
+  // Optional debug day override from query param (0=Minggu ... 6=Sabtu)
+  const debugDay = req.query.debugDay !== undefined ? Number(req.query.debugDay) : undefined;
+
   try {
     const child = await getOrCreateChild(deviceId);
-    const schedules = await getSchedules(child.id);
+    const schedules = showAll
+      ? await getAllSchedules(child.id)       // parent: no day filter
+      : await getSchedules(child.id, debugDay); // child: filtered by day
     res.json({ child, schedules });
   } catch (err) {
     res.status(500).json({ error: "Database error" });
@@ -624,6 +650,71 @@ app.post("/api/reset", async (req, res) => {
     const schedules = await getSchedules(child.id);
     res.json({ child: updatedChild, schedules });
   } catch (err) {
+    res.status(500).json({ error: "Database error" });
+  }
+});
+
+// Restore missing system schedules without wiping EXP/progress
+app.post("/api/restore-system-schedules", async (req, res) => {
+  const deviceId = req.headers['x-device-id'] as string;
+  if (!deviceId) return res.status(400).json({ error: "Device ID required" });
+
+  try {
+    const child = await getOrCreateChild(deviceId);
+
+    // Get existing schedule IDs for this child
+    const [existing]: any = await pool.query(
+      `SELECT id FROM schedules WHERE child_id = ?`, [child.id]
+    );
+    const existingIds = new Set(existing.map((r: any) => r.id));
+
+    // Re-insert any missing system schedules from DEFAULT_SCHEDULES
+    let restored = 0;
+    for (const s of DEFAULT_SCHEDULES) {
+      if (!s.locked) continue; // only restore locked system schedules
+      if (existingIds.has(s.id)) continue; // skip if already exists
+      await pool.query(
+        `INSERT INTO schedules (id, child_id, title, category, description, startTime, endTime, day, completed, reward, locked, parentQuest)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [s.id, child.id, s.title, s.category, s.description, s.startTime, s.endTime, s.day, false, s.reward, s.locked, s.parentQuest]
+      );
+      restored++;
+    }
+
+    const schedules = await getSchedules(child.id);
+    res.json({ success: true, restored, schedules });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Database error" });
+  }
+});
+
+
+// Admin: Restore system schedules for ALL children at once
+app.post("/api/admin/restore-all", async (req, res) => {
+  try {
+    const [allChildren]: any = await pool.query(`SELECT id FROM children`);
+    let totalRestored = 0;
+
+    for (const child of allChildren) {
+      const [existing]: any = await pool.query(`SELECT id FROM schedules WHERE child_id = ?`, [child.id]);
+      const existingIds = new Set(existing.map((r: any) => r.id));
+
+      for (const s of DEFAULT_SCHEDULES) {
+        if (!s.locked) continue;
+        if (existingIds.has(s.id)) continue;
+        await pool.query(
+          `INSERT INTO schedules (id, child_id, title, category, description, startTime, endTime, day, completed, reward, locked, parentQuest)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [s.id, child.id, s.title, s.category, s.description, s.startTime, s.endTime, s.day, false, s.reward, s.locked, s.parentQuest]
+        );
+        totalRestored++;
+      }
+    }
+
+    res.json({ success: true, childrenProcessed: allChildren.length, totalRestored });
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Database error" });
   }
 });
